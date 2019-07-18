@@ -1,0 +1,8 @@
+一，问题描述
+测试同事在测试过程中发现对一张平面图换图，存在换完后进入预览或摆图界面有没换前图的tile残留。
+二，问题分析
+经过反复测试，发现换图前进入预览界面然后缩放map，然后回到平面图列表换图，然后执行转图，然后在回到预览里，缩放map，问题必现，找到规律
+三，问题原因
+经查看leaflet源码（https://github.com/Leaflet/Leaflet），以及参考MDN文档（https://developer.mozilla.org/zh-CN/docs/Web/API/HTMLImageElement）和根据浏览器缓存图片行为分析（html页面中多个img使用同一张图测试），leaflet加载tile是以var tile = document.createElement('img');形式添加dom元素存在的，又因为云配置系统加载tile url是http://dev-cutsys.3jyun.com/out/5d15975227f3925c4bdf7c8b/5d15975227f3925c4bdf7c8c/5d2c308150d58d3c13be3a17/2/1/2.png   形式，也就是说在换图后，其实url是不变的，而已经加载到内存的图，url不变的情况是不会去重新刷新获取新图的，而HTML也没提供获取这些已经加载在内存图的接口。想要清理掉这些已经是错误的图，要么就是更改url后面加随机数，此种方法导致每次加载新图，网络不好的用户会有很大影响不建议使用；然后就考虑到换图后就执行转图前来一次刷新，把当前内存清掉，尽量少影响用户使用。
+四，问题解决
+在平面图列表，用户执行换图后，添加一个sessionStorage记录，然后在进入预览后判断是否有换图，然后选择是否刷新页面
